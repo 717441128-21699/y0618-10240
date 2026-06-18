@@ -15,6 +15,7 @@ export default function OrgActivities() {
   const [showCreateActivity, setShowCreateActivity] = useState(false);
   const [showCreateItem, setShowCreateItem] = useState(false);
   const [defaultActivityId, setDefaultActivityId] = useState<string | undefined>(undefined);
+  const [jumpToActivityId, setJumpToActivityId] = useState<string | null>(null);
 
   const orgActivities = currentUser?.orgId ? getActivitiesByOrgId(currentUser.orgId) : [];
   
@@ -132,6 +133,7 @@ export default function OrgActivities() {
                 <button 
                   onClick={() => {
                     setDefaultActivityId(activity.id);
+                    setJumpToActivityId(activity.id);
                     setShowCreateItem(true);
                   }}
                   className="px-4 py-2 text-sm flex items-center gap-1.5 text-secondary-600 border border-secondary-500 rounded-lg hover:bg-secondary-50 transition-colors"
@@ -145,12 +147,20 @@ export default function OrgActivities() {
                   管理物品
                 </button>
               )}
-              {activity.status === 'ended' && (
+              {activity.status === 'ended' && !activity.settled && (
                 <button 
-                  onClick={() => navigate('/org/reports')}
+                  onClick={() => navigate(`/org/settlement/${activity.id}`)}
+                  className="px-4 py-2 text-sm bg-accent-500 text-white rounded-lg hover:bg-accent-600 transition-colors"
+                >
+                  去结算
+                </button>
+              )}
+              {activity.status === 'ended' && activity.settled && (
+                <button 
+                  onClick={() => navigate(`/activity/${activity.id}`)}
                   className="px-4 py-2 text-sm text-secondary-500 border border-secondary-500 rounded-lg hover:bg-secondary-50 transition-colors"
                 >
-                  查看报告
+                  查看公示
                 </button>
               )}
               <button 
@@ -187,6 +197,12 @@ export default function OrgActivities() {
         onClose={() => {
           setShowCreateItem(false);
           setDefaultActivityId(undefined);
+        }}
+        onSuccess={() => {
+          if (jumpToActivityId) {
+            navigate(`/activity/${jumpToActivityId}`, { replace: true });
+            setJumpToActivityId(null);
+          }
         }}
         defaultActivityId={defaultActivityId}
       />

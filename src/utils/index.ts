@@ -94,6 +94,17 @@ export function getActivityStatusColor(status: string): string {
   return map[status] || 'bg-gray-100 text-gray-500';
 }
 
+export function getOrderStatusColor(status: string): string {
+  const map: Record<string, string> = {
+    pending_pay: 'bg-accent-100 text-accent-600',
+    paid: 'bg-navy-100 text-navy-600',
+    shipped: 'bg-secondary-100 text-secondary-600',
+    completed: 'bg-green-100 text-green-600',
+    cancelled: 'bg-gray-100 text-gray-500',
+  };
+  return map[status] || 'bg-gray-100 text-gray-500';
+}
+
 export function generateId(): string {
   return Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
 }

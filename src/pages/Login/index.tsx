@@ -59,12 +59,10 @@ export default function Login() {
       userId = 'user-2';
     } else if (email === 'admin') {
       userId = 'user-3';
-    } else if (email.trim() && allUsers.length > 0) {
-      userId = allUsers[0].id;
     }
 
     if (!userId) {
-      setError('未找到账号，请先注册或使用快捷登录：输入 user/org/admin 任意一个直接登录');
+      setError('该账号不存在，请先注册或使用快捷登录（输入 user/org/admin 任意一个即可直接登录）');
       return;
     }
 

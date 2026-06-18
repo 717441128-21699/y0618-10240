@@ -40,6 +40,11 @@ export interface Activity {
   startTime: string;
   endTime: string;
   createdAt: string;
+  settled?: boolean;
+  settlementAt?: string;
+  operationCostRate?: number;
+  operationCostAmount?: number;
+  finalDonationAmount?: number;
 }
 
 export type ItemType = 'physical' | 'experience' | 'service';
@@ -137,17 +142,42 @@ export interface FundRecord {
   createdAt: string;
 }
 
+export interface SettlementItem {
+  itemId: string;
+  itemName: string;
+  itemImage: string;
+  itemType: ItemType;
+  buyerId: string;
+  buyerName: string;
+  buyerAvatar: string;
+  finalPrice: number;
+  orderStatus: OrderStatus;
+  orderId: string;
+  orderType: OrderType;
+  donorName: string;
+  operationCost: number;
+  donationAmount: number;
+}
+
 export interface ActivityReport {
   activityId: string;
   activityTitle: string;
+  orgName: string;
+  projectName: string;
   totalIncome: number;
-  operationCost: number;
-  donationAmount: number;
+  totalPaidIncome: number;
+  totalUnpaid: number;
+  operationCostRate: number;
+  totalOperationCost: number;
+  totalDonationAmount: number;
   participantCount: number;
   itemCount: number;
   soldCount: number;
   bidCount: number;
+  items: SettlementItem[];
   fundRecords: FundRecord[];
   receipts: DonationReceipt[];
   generatedAt: string;
+  settled: boolean;
+  settledAt?: string;
 }

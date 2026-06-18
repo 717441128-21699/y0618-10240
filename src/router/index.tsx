@@ -20,6 +20,7 @@ import OrgItems from '../pages/OrgAdmin/Items';
 import OrgOrders from '../pages/OrgAdmin/Orders';
 import OrgReports from '../pages/OrgAdmin/Reports';
 import OrgSettings from '../pages/OrgAdmin/Settings';
+import OrgSettlement from '../pages/OrgAdmin/Settlement';
 
 export default function AppRouter() {
   return (
@@ -37,6 +38,7 @@ export default function AppRouter() {
           <Route path="orders" element={<OrgOrders />} />
           <Route path="reports" element={<OrgReports />} />
           <Route path="settings" element={<OrgSettings />} />
+          <Route path="settlement/:activityId" element={<OrgSettlement />} />
         </Route>
 
         <Route
