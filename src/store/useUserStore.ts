@@ -1,50 +1,91 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User, Bid, Order, Item, Address } from '../types';
-import { mockUsers, mockBids, mockOrders, mockItems, mockAddresses } from '../mock';
+import { mockUsers, mockBids, mockItems, mockAddresses } from '../mock';
+import { useOrderStore } from './useOrderStore';
+import { generateId } from '../utils';
 
 interface UserState {
+  allUsers: User[];
   currentUser: User | null;
   isLoggedIn: boolean;
   myBids: Bid[];
-  myOrders: Order[];
-  myItems: Item[];
   addresses: Address[];
-  login: (userId: string) => void;
+  register: (data: {
+    nickname: string;
+    email: string;
+    phone: string;
+    role?: User['role'];
+    orgId?: string;
+    orgName?: string;
+  }) => { success: boolean; message?: string };
+  login: (userId: string) => boolean;
   logout: () => void;
   addBid: (bid: Bid) => void;
-  addOrder: (order: Order) => void;
-  updateOrderStatus: (orderId: string, status: Order['status']) => void;
-  addAddress: (address: Address) => void;
+  addAddress: (address: Omit<Address, 'id' | 'userId'> & { userId?: string }) => string;
   updateAddress: (address: Address) => void;
   deleteAddress: (addressId: string) => void;
+  updateProfile: (data: Partial<User>) => void;
 }
 
 export const useUserStore = create<UserState>()(
   persist(
     (set, get) => ({
+      allUsers: mockUsers,
       currentUser: null,
       isLoggedIn: false,
       myBids: [],
-      myOrders: [],
-      myItems: [],
       addresses: [],
 
-      login: (userId: string) => {
-        const user = mockUsers.find(u => u.id === userId);
-        if (user) {
-          const userBids = mockBids.filter(b => b.userId === userId);
-          const userOrders = mockOrders.filter(o => o.userId === userId);
-          const userAddresses = mockAddresses.filter(a => a.userId === userId);
-          set({
-            currentUser: user,
-            isLoggedIn: true,
-            myBids: userBids,
-            myOrders: userOrders,
-            myItems: mockItems.filter(i => i.donorId === userId),
-            addresses: userAddresses,
-          });
+      register: (data) => {
+        const { allUsers } = get();
+        
+        if (allUsers.some(u => u.email === data.email)) {
+          return { success: false, message: '该邮箱已被注册' };
         }
+        if (allUsers.some(u => u.phone === data.phone)) {
+          return { success: false, message: '该手机号已被注册' };
+        }
+
+        const newUserId = 'user-' + generateId();
+        const avatarSeed = encodeURIComponent(data.nickname);
+        const newUser: User = {
+          id: newUserId,
+          name: data.nickname,
+          email: data.email,
+          phone: data.phone,
+          role: data.role || 'user',
+          avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${avatarSeed}`,
+          orgId: data.orgId,
+          orgName: data.orgName,
+          createdAt: new Date().toISOString(),
+        };
+
+        set(state => ({
+          allUsers: [...state.allUsers, newUser],
+          currentUser: newUser,
+          isLoggedIn: true,
+          myBids: mockBids.filter(b => b.userId === newUserId),
+          addresses: mockAddresses.filter(a => a.userId === newUserId),
+        }));
+
+        return { success: true };
+      },
+
+      login: (userId: string) => {
+        const { allUsers } = get();
+        const user = allUsers.find(u => u.id === userId);
+        if (!user) return false;
+
+        const userBids = mockBids.filter(b => b.userId === userId);
+        const userAddresses = mockAddresses.filter(a => a.userId === userId);
+        set({
+          currentUser: user,
+          isLoggedIn: true,
+          myBids: userBids,
+          addresses: userAddresses,
+        });
+        return true;
       },
 
       logout: () => {
@@ -52,8 +93,6 @@ export const useUserStore = create<UserState>()(
           currentUser: null,
           isLoggedIn: false,
           myBids: [],
-          myOrders: [],
-          myItems: [],
           addresses: [],
         });
       },
@@ -64,32 +103,19 @@ export const useUserStore = create<UserState>()(
         }));
       },
 
-      addOrder: (order: Order) => {
-        set(state => ({
-          myOrders: [order, ...state.myOrders],
-        }));
-      },
+      addAddress: (addressData) => {
+        const { currentUser } = get();
+        const addrId = 'addr-' + generateId();
+        const newAddress: Address = {
+          id: addrId,
+          userId: addressData.userId || currentUser?.id || '',
+          ...addressData,
+        } as Address;
 
-      updateOrderStatus: (orderId: string, status: Order['status']) => {
-        const now = new Date().toISOString();
         set(state => ({
-          myOrders: state.myOrders.map(order => {
-            if (order.id === orderId) {
-              const updated = { ...order, status };
-              if (status === 'paid') updated.payTime = now;
-              if (status === 'shipped') updated.shipTime = now;
-              if (status === 'completed') updated.confirmTime = now;
-              return updated;
-            }
-            return order;
-          }),
+          addresses: [...state.addresses, newAddress],
         }));
-      },
-
-      addAddress: (address: Address) => {
-        set(state => ({
-          addresses: [...state.addresses, address],
-        }));
+        return addrId;
       },
 
       updateAddress: (address: Address) => {
@@ -103,9 +129,18 @@ export const useUserStore = create<UserState>()(
           addresses: state.addresses.filter(a => a.id !== addressId),
         }));
       },
+
+      updateProfile: (data) => {
+        set(state => ({
+          currentUser: state.currentUser ? { ...state.currentUser, ...data } : null,
+          allUsers: state.allUsers.map(u =>
+            u.id === state.currentUser?.id ? { ...u, ...data } : u
+          ),
+        }));
+      },
     }),
     {
-      name: 'user-storage',
+      name: 'user-storage-v2',
     }
   )
 );

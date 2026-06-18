@@ -4,8 +4,9 @@ export interface User {
   email: string;
   phone: string;
   avatar: string;
-  role: 'user' | 'organization' | 'admin';
+  role: 'user' | 'organization' | 'org' | 'admin';
   orgId?: string;
+  orgName?: string;
   createdAt: string;
 }
 

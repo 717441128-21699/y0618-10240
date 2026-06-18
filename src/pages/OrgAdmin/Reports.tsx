@@ -1,10 +1,18 @@
+import { useMemo } from 'react';
 import { FileText, Download, Eye, Calendar, TrendingUp, TrendingDown, CheckCircle } from 'lucide-react';
-import { mockReceipts, mockActivities } from '../../mock';
+import { mockReceipts, mockFundRecords } from '../../mock';
+import { useActivityStore } from '../../store/useActivityStore';
+import { useUserStore } from '../../store/useUserStore';
 import { formatPrice, formatDate } from '../../utils';
-import { mockFundRecords } from '../../mock';
 
 export default function OrgReports() {
-  const endedActivities = mockActivities.filter(a => a.status === 'ended' && a.orgId === 'org-1');
+  const { activities, getActivitiesByOrgId } = useActivityStore();
+  const { currentUser } = useUserStore();
+  
+  const endedActivities = useMemo(() => {
+    if (!currentUser?.orgId) return [];
+    return getActivitiesByOrgId(currentUser.orgId).filter(a => a.status === 'ended');
+  }, [currentUser, activities, getActivitiesByOrgId]);
 
   return (
     <div>

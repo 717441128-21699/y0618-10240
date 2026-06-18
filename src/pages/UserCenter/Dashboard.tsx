@@ -1,12 +1,20 @@
 import { Link } from 'react-router-dom';
 import { Gavel, ShoppingBag, Heart, Gift, TrendingUp } from 'lucide-react';
+import { useMemo } from 'react';
 import { useUserStore } from '../../store/useUserStore';
 import { useActivityStore } from '../../store/useActivityStore';
+import { useOrderStore } from '../../store/useOrderStore';
 import { formatPrice, formatNumber } from '../../utils';
 
 export default function UserDashboard() {
-  const { myOrders, myBids } = useUserStore();
+  const { myBids, currentUser } = useUserStore();
   const { activities } = useActivityStore();
+  const { orders, getOrdersByUserId } = useOrderStore();
+
+  const myOrders = useMemo(() => {
+    if (!currentUser) return [];
+    return getOrdersByUserId(currentUser.id);
+  }, [currentUser, orders, getOrdersByUserId]);
 
   const totalSpent = myOrders
     .filter(o => o.status !== 'cancelled')

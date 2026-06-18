@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
   Gavel, Tag, Truck, Shield, Clock, Heart, 
@@ -15,8 +15,8 @@ import type { Order } from '../../types';
 export default function ItemDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { getItemById, getBidsByItemId, getActivityById, placeBid, buyNow } = useActivityStore();
-  const { isLoggedIn, currentUser, addBid, addOrder } = useUserStore();
+  const { getItemById, getBidsByItemId, getActivityById, placeBid, buyNow, incrementItemViewer } = useActivityStore();
+  const { isLoggedIn, currentUser, addBid } = useUserStore();
   
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [bidAmount, setBidAmount] = useState<number>(0);
@@ -27,6 +27,14 @@ export default function ItemDetail() {
   const item = getItemById(id || '');
   const bids = getBidsByItemId(id || '');
   const activity = item ? getActivityById(item.activityId) : undefined;
+
+  const minBid = item ? item.currentPrice + item.minIncrement : 0;
+
+  useEffect(() => {
+    if (item) {
+      setBidAmount(minBid);
+    }
+  }, [item?.id, item?.currentPrice, item?.minIncrement]);
 
   if (!item) {
     return (
@@ -41,8 +49,6 @@ export default function ItemDetail() {
       </div>
     );
   }
-
-  const minBid = item.currentPrice + item.minIncrement;
 
   const handleQuickBid = (increment: number) => {
     const newAmount = Math.max(minBid, item.currentPrice + increment);
@@ -91,23 +97,8 @@ export default function ItemDetail() {
     
     const result = buyNow(item.id, currentUser.id, currentUser.name);
     if (result.success && result.orderId) {
-      const order: Order = {
-        id: result.orderId,
-        userId: currentUser.id,
-        itemId: item.id,
-        activityId: item.activityId,
-        itemName: item.name,
-        itemImage: item.image,
-        itemType: item.type,
-        amount: item.buyNowPrice,
-        type: 'buynow',
-        status: 'pending_pay',
-        donorName: item.donorName,
-        createdAt: new Date().toISOString(),
-      };
-      addOrder(order);
       setShowBuyNowConfirm(false);
-      navigate(`/user/orders`);
+      navigate(`/user/orders`, { replace: true });
     }
   };
 

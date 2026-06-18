@@ -1,13 +1,22 @@
 import { useState } from 'react';
-import { Plus, MoreVertical, Calendar, Users, DollarSign } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, MoreVertical, Calendar, Users, DollarSign, Package } from 'lucide-react';
 import { useActivityStore } from '../../store/useActivityStore';
+import { useUserStore } from '../../store/useUserStore';
 import { formatPrice, formatNumber, getActivityStatusLabel, getActivityStatusColor } from '../../utils';
+import CreateActivityModal from '../../components/business/CreateActivityModal';
+import CreateItemModal from '../../components/business/CreateItemModal';
 
 export default function OrgActivities() {
-  const { activities } = useActivityStore();
+  const navigate = useNavigate();
+  const { activities, getActivitiesByOrgId } = useActivityStore();
+  const { currentUser } = useUserStore();
   const [activeTab, setActiveTab] = useState<'all' | 'ongoing' | 'upcoming' | 'ended'>('all');
+  const [showCreateActivity, setShowCreateActivity] = useState(false);
+  const [showCreateItem, setShowCreateItem] = useState(false);
+  const [defaultActivityId, setDefaultActivityId] = useState<string | undefined>(undefined);
 
-  const orgActivities = activities.filter(a => a.orgId === 'org-1');
+  const orgActivities = currentUser?.orgId ? getActivitiesByOrgId(currentUser.orgId) : [];
   
   const filteredActivities = activeTab === 'all'
     ? orgActivities
@@ -27,7 +36,10 @@ export default function OrgActivities() {
           <h1 className="font-serif text-2xl font-bold text-gray-800">活动管理</h1>
           <p className="text-gray-500 mt-1">管理您的公益义卖活动</p>
         </div>
-        <button className="btn-primary flex items-center gap-2">
+        <button 
+          onClick={() => setShowCreateActivity(true)}
+          className="btn-primary flex items-center gap-2"
+        >
           <Plus className="w-4 h-4" />
           创建活动
         </button>
@@ -115,24 +127,69 @@ export default function OrgActivities() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-warm-100">
+            <div className="flex justify-end gap-3 mt-4 pt-4 border-t border-warm-100 flex-wrap">
+              {(activity.status === 'ongoing' || activity.status === 'upcoming') && (
+                <button 
+                  onClick={() => {
+                    setDefaultActivityId(activity.id);
+                    setShowCreateItem(true);
+                  }}
+                  className="px-4 py-2 text-sm flex items-center gap-1.5 text-secondary-600 border border-secondary-500 rounded-lg hover:bg-secondary-50 transition-colors"
+                >
+                  <Package className="w-4 h-4" />
+                  上架物品
+                </button>
+              )}
               {activity.status === 'ongoing' && (
                 <button className="px-4 py-2 text-sm text-primary-500 border border-primary-500 rounded-lg hover:bg-primary-50 transition-colors">
                   管理物品
                 </button>
               )}
               {activity.status === 'ended' && (
-                <button className="px-4 py-2 text-sm text-secondary-500 border border-secondary-500 rounded-lg hover:bg-secondary-50 transition-colors">
+                <button 
+                  onClick={() => navigate('/org/reports')}
+                  className="px-4 py-2 text-sm text-secondary-500 border border-secondary-500 rounded-lg hover:bg-secondary-50 transition-colors"
+                >
                   查看报告
                 </button>
               )}
-              <button className="px-4 py-2 text-sm bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors">
+              <button 
+                onClick={() => navigate(`/activity/${activity.id}`)}
+                className="px-4 py-2 text-sm bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+              >
                 {activity.status === 'upcoming' ? '立即发布' : '查看详情'}
               </button>
             </div>
           </div>
         ))}
+
+        {filteredActivities.length === 0 && (
+          <div className="card py-16 text-center">
+            <div className="text-gray-400 text-6xl mb-4">🎯</div>
+            <p className="text-gray-500 mb-4">暂无活动，赶紧创建第一个公益义卖活动吧！</p>
+            <button 
+              onClick={() => setShowCreateActivity(true)}
+              className="btn-primary inline-flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              创建活动
+            </button>
+          </div>
+        )}
       </div>
+
+      <CreateActivityModal 
+        isOpen={showCreateActivity} 
+        onClose={() => setShowCreateActivity(false)} 
+      />
+      <CreateItemModal 
+        isOpen={showCreateItem} 
+        onClose={() => {
+          setShowCreateItem(false);
+          setDefaultActivityId(undefined);
+        }}
+        defaultActivityId={defaultActivityId}
+      />
     </div>
   );
 }
